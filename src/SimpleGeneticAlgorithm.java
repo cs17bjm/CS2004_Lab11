@@ -1,8 +1,15 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class SimpleGeneticAlgorithm
 {
+	public String stringOutput = "";
+	public String mode = "";
+
+
 	//The population is an array list of Scales Chromosomes
 	private ArrayList<ScalesChrome> population = new ArrayList<ScalesChrome>();
 	//How many weights we are solving Scales for
@@ -18,11 +25,11 @@ public class SimpleGeneticAlgorithm
 	//Create a Genetic Algorithm with the specified parameters
 	public SimpleGeneticAlgorithm(int ps,int gs,int nb,double mr,double cr)
 	{
-		nbits = nb;
-		popsize = ps;
-		gensize = gs;
-		mrate = mr;
-		crate = cr;
+		nbits = nb;			//Chromosome size
+		popsize = ps;		//Population size for the genetic algorithm
+		gensize = gs;		//Number of generations to run for
+		mrate = mr;			//Mutation rate
+		crate = cr;			//Crossover rate
 	}
 	//Run the Genetic Algorithm with the current parameter set
 	//If 'report' is true then display the best fitness for each generation
@@ -41,7 +48,7 @@ public class SimpleGeneticAlgorithm
 	//Run the Genetic Algorithm with the current parameter set, except for generations
 	//The GA is run for a specified number of fitness function calls 'nfc'
 	//If 'report' is true then display the best fitness for each generation
-	public ScalesChrome RunSGA(int nfc,boolean report)
+	public ScalesChrome RunSGA(int nfc,boolean report, int count)
 	{
 		InitPop();
 		int i = 0;
@@ -51,7 +58,10 @@ public class SimpleGeneticAlgorithm
 			Mutation();
 			Survival();
 			Report(i++,report);
+
 		}
+		//Writing data to CSV file, comment out writeFile() to stop
+		writeFile(stringOutput, count, mode);
 		return(population.get(0));
 	}
 	//Create a new random population
@@ -66,7 +76,11 @@ public class SimpleGeneticAlgorithm
 	//Display summary information each generation if 'report' is true
 	private void Report(int i,boolean report)
 	{
-		if (!report) return;
+		if (!report) 
+		{
+			stringOutput += ComputeAverage() + "," + population.get(0).GetFitness() + "\n";
+			return;
+		}
 		System.out.print(i);
 		System.out.print(" ");
 		System.out.print(ScalesChrome.GetFC());
@@ -74,6 +88,7 @@ public class SimpleGeneticAlgorithm
 		System.out.print(ComputeAverage());
 		System.out.print(" ");
 		System.out.println(population.get(0).GetFitness());
+		stringOutput += ComputeAverage() + "," + population.get(0).GetFitness() + "\n";
 	}
 	//Compute the average fitness for the population
 	public double ComputeAverage()
@@ -116,9 +131,23 @@ public class SimpleGeneticAlgorithm
 		ArrayList<Integer> c2 = new ArrayList<Integer>();
 		
 		//Add Uniform Crossover here - use DoOnePointCrossOver as a basis 
-		
+		for(int i=0;i<nbits;++i)
+		{
+			if (CS2004.UI(0,1) == 0) 
+			{
+				c1.add(p1.get(i));
+				c2.add(p2.get(i));
+			}
+			else
+			{
+				c1.add(p2.get(i));
+				c2.add(p1.get(i));
+			}
+		}
 		population.add(new ScalesChrome(c1));
 		population.add(new ScalesChrome(c2));
+
+
 	}
 	//Perform Crossover for the population
 	private void CrossOver()
@@ -138,12 +167,16 @@ public class SimpleGeneticAlgorithm
 				a = CS2004.UI(0,xlist.size()-1);
 				b = CS2004.UI(0,xlist.size()-1);
 			}
-			DoOnePointCrossOver(xlist.get(a),xlist.get(b));
+			//DoOnePointCrossOver(xlist.get(a),xlist.get(b));
+
 			//Comment out the above and uncomment the following for Uniform Crossover
-			//DoUniformCrossOver(xlist.get(a),xlist.get(b));
+			DoUniformCrossOver(xlist.get(a),xlist.get(b));
+
 			xlist.remove(b);
 			xlist.remove(a);
 		}
+		//mode = "_OnePoint_";
+		mode = "_Uniform_";
 	}
 	//Mutate the whole population
 	private void Mutation()
@@ -176,5 +209,16 @@ public class SimpleGeneticAlgorithm
 		{
 			population.remove(popsize);
 		}
+	}
+	//Writing data to CSV file
+	static public void writeFile(String input, int count, String mode)
+	{
+        try {
+        	FileWriter fw = new FileWriter(new File( "GA" + mode + count +".csv"));
+            fw.write(String.format(input));
+            fw.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
 	}
 }
